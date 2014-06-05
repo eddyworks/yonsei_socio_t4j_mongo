@@ -13,7 +13,10 @@ import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.CommandResult;
 import com.mongodb.DB;
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
@@ -25,9 +28,27 @@ public class Main {
 	private static final String CONSUMER_SECRET = "GdV0MQENLF7xC5zROcqBFzGvwU2Vx9ccj0hFdV4DGkjTBW6TaG";
 	private static final String ACCESS_KEY = "1932804632-f0oRqMckQ7OrNiCmjS5sqmneFHy5VcMsnQDMsBu";
 	private static final String ACCESS_SECRET = "8I3K11atpMKYqZkKeH0K8bjehQYJ1Oz4GZX2gTtByO7FD";
+	private static final int defPort = 27017;	//학교 방화벽에 막히는 듯
+	private static final int altPort = 8081;
 
 	public static void main(String[] args) {
 		try {
+			// MongoDB 기초 - http://docs.mongodb.org/manual/tutorial/getting-started/
+			// MongoDB Java 활용 기초 - http://docs.mongodb.org/ecosystem/tutorial/getting-started-with-java-driver/
+			MongoCredential credentialCR = MongoCredential
+					.createMongoCRCredential("javatest", "twitter",
+							"javatest".toCharArray()); // 사용자, DB, 비번 순
+
+			MongoClient mongoClient = new MongoClient(new ServerAddress(
+					"165.132.98.87", altPort), Arrays.asList(credentialCR));
+
+			DB db = mongoClient.getDB("twitter");
+
+			DBCollection coll = db.getCollection("messages");
+
+			System.out.println(String.format("messages count - %d",
+					coll.count()));
+
 			ConfigurationBuilder cb = new ConfigurationBuilder();
 
 			cb.setDebugEnabled(true).setOAuthConsumerKey(CONSUMER_KEY)
@@ -36,42 +57,41 @@ public class Main {
 					.setOAuthAccessTokenSecret(ACCESS_SECRET);
 
 			Twitter twitter = new TwitterFactory(cb.build()).getInstance();
+
 			try {
 				Query query = new Query("박원순");
+				query.setCount(3); // 최대 100건 검색
+									// http://twitter4j.org/javadoc/twitter4j/Query.html#getCount()
+
 				QueryResult result;
 				do {
 					result = twitter.search(query);
+					System.out.println("Tweets Count: " + result.getCount());
+
 					List<Status> tweets = result.getTweets();
 					for (Status tweet : tweets) {
+						BasicDBObject doc = new BasicDBObject("userId", tweet.getUser().getId())
+						.append("id", tweet.getId())
+						.append("createdAt", tweet.getCreatedAt())
+				        .append("userScreenName", tweet.getUser().getScreenName())
+				        .append("text", tweet.getText());
+				        //.append("info", new BasicDBObject("x", 203).append("y", 102));
+				coll.insert(doc);
 						System.out.println("@"
 								+ tweet.getUser().getScreenName() + " - "
 								+ tweet.getText());
 					}
-				} while ((query = result.nextQuery()) != null);
-				System.exit(0);
+				} while (false && (query = result.nextQuery()) != null);
+				// System.exit(0);
 			} catch (TwitterException te) {
 				te.printStackTrace();
 				System.out.println("Failed to search tweets: "
 						+ te.getMessage());
 				System.exit(-1);
 			}
-
-			MongoCredential credential = MongoCredential
-					.createMongoCRCredential("sociology1", "twitter",
-							"tkghlgkrrhk`12".toCharArray());
-
-			MongoClient mongoClient = new MongoClient(new ServerAddress(
-					"165.132.98.87"), Arrays.asList(credential));
-
-			System.out.println(String.format("auth result - %s",
-					mongoClient.getVersion()));
-
-			DB db = mongoClient.getDB("twitter");
-
-			Set<String> list = db.getCollectionNames();
-
-			System.out.println(String.format("getCollectionNames count - %d",
-					list.size()));
+			
+			System.out.println(String.format("messages count - %d",
+					coll.count()));
 
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
