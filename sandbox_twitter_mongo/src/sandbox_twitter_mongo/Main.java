@@ -35,20 +35,19 @@ public class Main {
 		try {
 			// MongoDB 기초 - http://docs.mongodb.org/manual/tutorial/getting-started/
 			// MongoDB Java 활용 기초 - http://docs.mongodb.org/ecosystem/tutorial/getting-started-with-java-driver/
-			MongoCredential credentialCR = MongoCredential
-					.createMongoCRCredential("javatest", "twitter",
-							"javatest".toCharArray()); // 사용자, DB, 비번 순
-
-			MongoClient mongoClient = new MongoClient(new ServerAddress(
-					"165.132.98.87", altPort), Arrays.asList(credentialCR));
+			MongoClient mongoClient = 몽고DB접속();
 
 			DB db = mongoClient.getDB("twitter");
 
+			// messages 컬렉션의 document 갯수 파악 
 			DBCollection coll = db.getCollection("messages");
-
 			System.out.println(String.format("messages count - %d",
 					coll.count()));
 
+			// messages 컬렉션에 이미 들어 있는 document 조회 
+			
+			
+			// 트위터 API 인증 준비
 			ConfigurationBuilder cb = new ConfigurationBuilder();
 
 			cb.setDebugEnabled(true).setOAuthConsumerKey(CONSUMER_KEY)
@@ -59,17 +58,23 @@ public class Main {
 			Twitter twitter = new TwitterFactory(cb.build()).getInstance();
 
 			try {
+				// 박원순으로 검색
 				Query query = new Query("박원순");
-				query.setCount(3); // 최대 100건 검색
-									// http://twitter4j.org/javadoc/twitter4j/Query.html#getCount()
+				// 최대 100건 검색
+				query.setCount(3);
+				// 참고 http://twitter4j.org/javadoc/twitter4j/Query.html#getCount()
 
 				QueryResult result;
 				do {
 					result = twitter.search(query);
 					System.out.println("Tweets Count: " + result.getCount());
 
+					// 검색된 트윗 가져오기
 					List<Status> tweets = result.getTweets();
+					
+					// 트윗 하나하나 돌아가며 몽고디비 document로 추가
 					for (Status tweet : tweets) {
+						//
 						BasicDBObject doc = new BasicDBObject("userId", tweet.getUser().getId())
 						.append("id", tweet.getId())
 						.append("createdAt", tweet.getCreatedAt())
@@ -97,6 +102,16 @@ public class Main {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	private static MongoClient 몽고DB접속() throws UnknownHostException {
+		MongoCredential credentialCR = MongoCredential
+				.createMongoCRCredential("javatest", "twitter",
+						"javatest".toCharArray()); // 사용자, DB, 비번 순
+
+		MongoClient mongoClient = new MongoClient(new ServerAddress(
+				"165.132.98.87", altPort), Arrays.asList(credentialCR));
+		return mongoClient;
 	}
 
 }

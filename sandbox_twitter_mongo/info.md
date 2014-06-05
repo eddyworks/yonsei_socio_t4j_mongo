@@ -1,8 +1,14 @@
 #GUI 도구  
 ##맥 MongoHub  
-##<http://mongohub.todayclose.com/>  
+###<http://mongohub.todayclose.com/>  
 ##윈도 MongoVUE  
-##<http://blog.mongovue.com/>  
+###<http://blog.mongovue.com/>
+
+##SQL to MongoDB Mapping Chart
+###<http://docs.mongodb.org/manual/reference/sql-comparison/>
+
+##키노트 보기
+###<http://www.slideshare.net/EdwardJiminKim/mongo-db-35515577>
 
 ##명령어 예제  
 ###show dbs //DB 목록 조회  
